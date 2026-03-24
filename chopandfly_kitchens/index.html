@@ -57,21 +57,26 @@
   <!-- CHANGE: https://firebase.google.com/docs/web/modular-upgrade -->
   <script type="module">
     import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-app.js';
-    import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
+    import { initializeFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, onSnapshot, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.13.1/firebase-firestore.js';
     
     // Firebase config - USER: Replace with your config from Firebase Console
     window.firebaseConfig = {
       apiKey: "AIzaSyASmk8QJwxNd37zllLm637qnOkXSECuFmY",
       authDomain: "chopandfly-orders.firebaseapp.com",
+      databaseURL: "https://chopandfly-orders-default-rtdb.firebaseio.com",
       projectId: "chopandfly-orders",
       storageBucket: "chopandfly-orders.firebasestorage.app",
       messagingSenderId: "300932207087",
-      appId: "1:300932207087:web:0d1048253957a29093261a"
+      appId: "1:300932207087:web:0d1048253957a29093261a",
+      measurementId: "G-W7DNTEZ2QH"
     };
     
     // Initialize Firebase
     const app = initializeApp(window.firebaseConfig);
-    window.db = getFirestore(app);
+    window.db = initializeFirestore(app, {
+      experimentalAutoDetectLongPolling: true,
+      useFetchStreams: false
+    });
     
     // Export Firestore functions globally for app.js
     window.addOrder = async (order) => {
@@ -79,7 +84,7 @@
         return await addDoc(collection(window.db, "orders"), order);
       } catch (e) {
         console.error("Firebase error:", e);
-        return null;
+        throw e;
       }
     };
     
@@ -89,7 +94,7 @@
         return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       } catch (e) {
         console.error("Firebase error:", e);
-        return [];
+        throw e;
       }
     };
     
@@ -109,11 +114,14 @@
       }
     };
     
-    window.listenOrders = (callback) => {
+    window.listenOrders = (callback, onError) => {
       const q = query(collection(window.db, "orders"), orderBy("timestamp", "desc"));
       return onSnapshot(q, (snapshot) => {
         const orders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         callback(orders);
+      }, (error) => {
+        console.error("Firebase listener error:", error);
+        if (typeof onError === 'function') onError(error);
       });
     };
   </script>
