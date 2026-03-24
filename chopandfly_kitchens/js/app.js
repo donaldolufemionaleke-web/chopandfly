@@ -1286,7 +1286,10 @@ function CartView({
         </p>
         <button
           className="btn-primary px-8 py-3 justify-center"
-          onClick={onClose}
+          onClick={() => {
+            onClose();
+            document.getElementById("menu")?.scrollIntoView({ behavior: "smooth" });
+          }}
         >
           <i className="fas fa-book-open text-sm"></i> Browse Menu
         </button>
